@@ -1,0 +1,12 @@
+config {
+  type: "table"
+}
+
+SELECT
+  fcode,
+  inboundItemVOS.sku,
+  MAX(inboundItemVOS.basicPurchasePrice) AS ck_PurchasePrice,
+  MAX(inboundItemVOS.arriveCost) AS ck_arriveCost
+FROM `articulate-sol-302205.hwc_data_ritfit.jijia_erp_storage_inbound_detail` t,
+  UNNEST(t.inboundItemVOS) AS inboundItemVOS
+GROUP BY fcode, inboundItemVOS.sku

@@ -1,0 +1,19 @@
+config { type: "table" }
+
+SELECT DISTINCT
+  sourceOrderNo,
+  foOrderNo,
+  foOrderStatus,
+  deliveryMethod,
+  foOrderLogisticsInfoVO.waybillNo AS waybillNo,
+  orderItems.msku,
+  orderItems.sku,
+  orderItems.thirdsku,
+  orderItems.quantity,
+  orderItems.detailStatus,
+  warehouseName,
+  deliveryTime,
+  createTime
+FROM `articulate-sol-302205.hwc_data_ritfit.jijia_erp_order_foorder_v3` t,
+  UNNEST(t.orderItems) orderItems
+WHERE foOrderStatus != 'DELETE'

@@ -1,0 +1,8 @@
+config { type: "table" }
+
+SELECT  
+  DATE_TRUNC(dimensions.stat_time_day, MONTH) AS r_month,
+  SUM(metrics.spend) AS ads_spend
+FROM `articulate-sol-302205.social_media_ads_data.tiktok_ads_report_basic`
+WHERE metrics.advertiser_name = 'RITFIT ads'
+GROUP BY r_month

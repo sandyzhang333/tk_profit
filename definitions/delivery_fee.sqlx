@@ -1,0 +1,3 @@
+config { type: "table" }
+
+SELECT * FROM `articulate-sol-302205.hwc_data_ritfit.delivery_fee_warehouse_table`

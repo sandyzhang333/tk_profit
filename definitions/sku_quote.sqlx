@@ -1,0 +1,8 @@
+config { type: "table" }
+
+SELECT
+  sku,
+  briefName,
+  IFNULL(quote, 0.001) AS quote
+FROM `articulate-sol-302205.hwc_data_ritfit.jijia_erp_product_list`
+WHERE sku IS NOT NULL

@@ -1,0 +1,9 @@
+config { type: "table" }
+
+SELECT 
+  DATE(CONCAT(CAST(year AS STRING), '-', LPAD(CAST(month AS STRING), 2, '0'), '-01')) AS r_month,
+  shopName,
+  SUM(operating_cost) AS operating_cost 
+FROM `articulate-sol-302205.warehouse_fee.Warehousing_operation_fee_table`
+WHERE shopName = 'TikTok-RF'
+GROUP BY year, month, shopName

@@ -1,0 +1,66 @@
+config {
+  type: "table"
+}
+
+SELECT
+  orderId,
+  orderCreateTime,
+  statementTime,
+  productName,
+  skuId,
+  sellerSku,
+  skuName,
+  ROUND(SUM(CAST(COALESCE(settlementAmount, '0') AS FLOAT64)), 2) AS settlement_amount,
+  ROUND(SUM(CAST(COALESCE(grossSalesAmount, '0') AS FLOAT64)), 2) AS gross_sales,
+  ROUND(SUM(CAST(COALESCE(grossSalesRefundAmount, '0') AS FLOAT64)), 2) AS gross_sales_refund,
+  ROUND(SUM(CAST(COALESCE(netSalesAmount, '0') AS FLOAT64)), 2) AS net_sales,
+  ROUND(SUM(CAST(COALESCE(sellerDiscountAmount, '0') AS FLOAT64)), 2) AS seller_discount,
+  ROUND(SUM(CAST(COALESCE(sellerDiscountRefundAmount, '0') AS FLOAT64)), 2) AS seller_discount_refund,
+  ROUND(SUM(CAST(COALESCE(customerPaymentAmount, '0') AS FLOAT64)), 2) AS customer_payment,
+  ROUND(SUM(CAST(COALESCE(shippingCostAmount, '0') AS FLOAT64)), 2) AS shippingCostAmount,
+  ROUND(SUM(
+    CAST(COALESCE(customerPaidShippingFeeRefundAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(returnShippingFeeAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(actualReturnShippingFeeAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(retailDeliveryFeeRefundAmount, '0') AS FLOAT64)
+  ), 2) AS shipping_refund,
+  ROUND(sum(CAST(COALESCE(transactionFeeAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(referralFeeAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(refundAdministrationFeeAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(platformCommissionAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(adjustmentAmount, '0') AS FLOAT64)
+  ), 2) AS platform_service_fee_total,
+  ROUND(SUM(
+    CAST(COALESCE(affiliateCommissionAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(affiliatePartnerCommissionAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(affiliateAdsCommissionAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(affiliateCommissionBeforePit, '0') AS FLOAT64)
+  ), 2) AS affiliate_total,
+  ROUND(SUM(
+    CAST(COALESCE(platformDiscountAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(platformRefundSubsidyAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(shippingFeeSubsidyAmount, '0') AS FLOAT64)
+  ), 2) AS campaign_subsidy_total,
+  ROUND(SUM(
+    CAST(COALESCE(platformDiscountRefundAmount, '0') AS FLOAT64)
+  ), 2) AS campaign_subsidy_refund,
+  ROUND(SUM(
+    CAST(COALESCE(salesTaxAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(salesTaxPaymentAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(ivaVatAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(isrIncomeTaxAmount, '0') AS FLOAT64)
+    + CAST(COALESCE(pitAmount, '0') AS FLOAT64)
+  ), 2) AS tax_total,
+  -ROUND(SUM(
+    CAST(COALESCE(salesTaxRefundAmount, '0') AS FLOAT64)
+  ), 2) AS tax_refund
+FROM `articulate-sol-302205.social_media_data.tk_statement_report` 
+-- WHERE statementTime BETWEEN '2025-05-01' AND '2025-05-31'
+GROUP BY 
+  orderId,
+  orderCreateTime,
+  statementTime,
+  productName,
+  skuId,
+  sellerSku,
+  skuName

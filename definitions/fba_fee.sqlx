@@ -1,0 +1,32 @@
+config { type: "table" }
+
+SELECT 
+  DATE(marketDate) AS marketDate,
+  type,
+  t.orderId,
+  LEFT(sellerOrderId, 19) AS sellerOrderId,
+  originSku,
+  IFNULL(t1.sku, msku) AS msku,
+  SUM(fbaFees) AS fbaFees,
+  SUM(purchaseCost) AS purchaseCost,
+  SUM(arriveCost) AS arriveCost
+FROM `articulate-sol-302205.hwc_data_ritfit.jijia_erp_finance_profit_analysis` t
+LEFT JOIN (
+  SELECT DISTINCT
+    sellerOrderId,
+    orderId,
+    sku
+  FROM `articulate-sol-302205.hwc_data_ritfit.jijia_erp_order_list_detail` t,
+    UNNEST(t.itemVos) itemVos
+) t1
+ON t.orderId = t1.orderId
+WHERE type IN ('Order', 'Refund')
+  AND t.OrderId LIKE ('S01%')
+GROUP BY 
+  DATE(marketDate),
+  type,
+  orderId,
+  t1.sku,
+  sellerOrderId,
+  originSku,
+  msku

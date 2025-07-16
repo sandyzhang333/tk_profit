@@ -1,0 +1,94 @@
+config { type: "table",
+  schema: "social_media_data",  
+  name: "TK_profit_analysis" }
+
+WITH base_union AS (
+  -- 非FBA
+  SELECT 
+    DATE_TRUNC(CAST(statementTime AS DATE), MONTH) AS r_month,
+    t1.*,
+    t2.*,
+    ROUND(ck_PurchasePrice/7.1, 2) AS PurchasePrice,
+    ROUND(ck_arriveCost/7.1, 2) AS arriveCost,
+    delivery_fee
+  FROM
+    ${ref('tt_sales')} t1
+  LEFT JOIN ${ref('fooder_report')} t2
+    ON t1.orderId = t2.sourceOrderNo AND t1.sellerSku = t2.msku
+  LEFT JOIN ${ref('chukuchaxun')} t3
+    ON t2.foOrderNo = t3.fcode
+  LEFT JOIN ${ref('delivery_fee')} t4
+    ON t2.waybillNo = t4.podOrderNo
+  WHERE NOT (deliveryMethod = 'FBA') OR deliveryMethod IS NULL
+
+  UNION ALL
+
+  -- FBA
+  SELECT 
+    DATE_TRUNC(CAST(statementTime AS DATE), MONTH) AS r_month,
+    t1.*,
+    t2.*,
+    -ROUND(purchaseCost, 2) AS PurchasePrice,
+    -ROUND(arriveCost, 2) AS arriveCost,
+    -ROUND(fbaFees, 2) AS delivery_fee
+  FROM
+    ${ref('tt_sales')} t1
+  LEFT JOIN ${ref('fooder_report')} t2
+    ON t1.orderId = t2.sourceOrderNo AND t1.sellerSku = t2.msku
+  LEFT JOIN ${ref('fba_fee')} t5
+    ON t1.orderId = t5.sellerOrderId AND t2.sku = t5.msku
+  WHERE deliveryMethod = 'FBA'
+)
+
+SELECT   
+  orderId,
+  orderCreateTime,
+  statementTime,
+  productName,
+  skuId,
+  sellerSku,
+  skuName,
+  ROUND(settlement_amount * fentan_rate, 2)          AS settlement_amount,
+  ROUND(gross_sales * fentan_rate, 2)                AS gross_sales,
+  ROUND(gross_sales_refund * fentan_rate, 2)         AS gross_sales_refund,
+  ROUND(net_sales * fentan_rate, 2)                  AS net_sales,
+  ROUND(seller_discount * fentan_rate, 2)            AS seller_discount,
+  ROUND(seller_discount_refund * fentan_rate, 2)     AS seller_discount_refund,
+  ROUND(customer_payment * fentan_rate, 2)           AS customer_payment,
+  ROUND(shippingCostAmount * fentan_rate, 2)         AS shippingCostAmount,
+  ROUND(shipping_refund * fentan_rate, 2)            AS shipping_refund,
+  ROUND(platform_service_fee_total * fentan_rate, 2) AS platform_service_fee_total,
+  ROUND(affiliate_total * fentan_rate, 2)            AS affiliate_total,
+  ROUND(campaign_subsidy_total * fentan_rate, 2)     AS campaign_subsidy_total,
+  ROUND(campaign_subsidy_refund * fentan_rate, 2)    AS campaign_subsidy_refund,
+  ROUND(tax_total * fentan_rate, 2)                  AS tax_total,
+  ROUND(tax_refund * fentan_rate, 2)                 AS tax_refund,
+  foOrderNo,
+  foOrderStatus,
+  deliveryMethod,
+  waybillNo,
+  msku,
+  sku,
+  thirdsku,
+  quantity,
+  detailStatus,
+  warehouseName,
+  deliveryTime,
+  createTime,
+  PurchasePrice,
+  arriveCost,
+  delivery_fee,
+  briefName,
+  quote,
+  IF(deliveryMethod = 'FBA', 0, gross_sales * fentan_rate / SUM(IF(deliveryMethod = 'FBA', 0, gross_sales * fentan_rate)) OVER (PARTITION BY r_month) * operating_cost) AS operating_cost,
+  (gross_sales * fentan_rate) / (SUM(gross_sales * fentan_rate) OVER (PARTITION BY r_month)) * ads_spend AS ads_spend
+
+FROM (
+  SELECT 
+    *,
+    IFNULL(quote, IFNULL(PurchasePrice, 0.001)) / SUM(IFNULL(quote, IFNULL(PurchasePrice, 0.001))) OVER (PARTITION BY statementTime, orderId, sellerSku) AS fentan_rate
+  FROM base_union
+  LEFT JOIN ${ref('sku_quote')} USING(sku)
+  LEFT JOIN ${ref('operation_fee')} USING(r_month)
+  LEFT JOIN ${ref('tiktok_ads')} USING(r_month)
+)
